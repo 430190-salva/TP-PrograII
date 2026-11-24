@@ -55,3 +55,8 @@
   font-size: 0.7rem;
   color: var(--m-muted);
 }
+.error {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #f87171;
+}

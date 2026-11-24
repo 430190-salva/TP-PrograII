@@ -7,7 +7,8 @@ export default function ConfirmarBajaModal({ cliente, onCerrar, onConfirmar }) {
   const uid = useId();
   const tituloId = `${uid}-titulo`;
   const descId = `${uid}-desc`;
-
+  console.log(cliente.id);
+  
   return (
     <Modal
       peligro
@@ -32,7 +33,7 @@ export default function ConfirmarBajaModal({ cliente, onCerrar, onConfirmar }) {
           <button type="button" className={`${styles.cancel} btn`} onClick={onCerrar}>
             Cancelar Operación
           </button>
-          <button type="button" className={`${styles.confirm} btn`} onClick={() => onConfirmar(cliente)}>
+          <button type="button" className={`${styles.confirm} btn`} onClick={() => onConfirmar(cliente.id)}>
             Confirmar Baja
           </button>
         </div>

@@ -120,6 +120,19 @@
 .search input::placeholder {
   color: #5b6578;
 }
+.tipoSelect {
+  padding: 0.6rem 0.9rem;
+  background: var(--c-bg-dark);
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  color: var(--c-text);
+  font-size: 0.85rem;
+}
+
+.tipoSelect:focus-visible {
+  outline: 2px solid var(--c-violet-soft);
+  outline-offset: 2px;
+}
 
 .segment {
   margin: 0;
@@ -358,6 +371,84 @@
   color: #fff;
   font-weight: 600;
 }
+.reintentar {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #8b5cf6;;
+  --bs-btn-border-color: #8b5cf6;;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #9d75f8;
+  --bs-btn-hover-border-color: #9d75f8;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #7c4ee8;
+  --bs-btn-active-border-color: #7c4ee8;
+  font-weight: 600;
+  padding: 0.5rem 1rem 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
+}
+
+/* Notificación de éxito */
+.toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(24rem, calc(100vw - 2rem));
+  padding: 0.8rem 1rem;
+  background: var(--c-card);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-left: 4px solid var(--c-green);
+  border-radius: 12px;
+  color: var(--c-text);
+  font-size: 0.875rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  animation: toastEntrar 0.2s ease-out;
+}
+
+.toastIcon {
+  font-size: 1.1rem;
+  color: var(--c-green);
+}
+.toastError {
+  border-color: rgba(248, 113, 113, 0.4);
+  border-left-color: var(--c-red);
+}
+
+.toastError .toastIcon {
+  color: var(--c-red);
+}
+
+.toastCerrar {
+  padding: 0.2rem 0.4rem;
+  line-height: 1;
+  color: var(--c-muted);
+}
+
+.toastCerrar:hover,
+.toastCerrar:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toastCerrar:focus-visible {
+  outline: 2px solid var(--c-violet-soft);
+  outline-offset: 2px;
+}
+
+@keyframes toastEntrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .newButton,

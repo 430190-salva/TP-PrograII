@@ -3,8 +3,16 @@ import IconUser from "../../assets/IconUser.svg"
 import IconEdit from "../../assets/IconEdit.svg"
 import IconDelete from "../../assets/IconDelete.svg"
 
-export default function Cliente({ cliente, onEditar, onEliminar }) {
-  const { id, nombre, dni, email, activo, destacado } = cliente;
+
+
+export default function Cliente({ cliente, onEditar, onEliminar, onHabilitar }) {
+  const { id, nombre, apellido, dni, email, activo } = cliente;
+  
+  
+  const habilitar = () => {
+    const dnii = parseInt(cliente.dni.replace(/\./g, ""), 10)
+    onHabilitar({...cliente,activo: true, dni:dnii})
+  }
 
   return (
     <tr className={activo ? "" : styles.rowInactive}>
@@ -18,17 +26,11 @@ export default function Cliente({ cliente, onEditar, onEliminar }) {
           </span>
           <div>
             <p className={`${styles.name} mb-0`}>
-              {nombre}
-              {destacado && (
-                <>
-                  <i className={`bi bi-star ${styles.star}`} aria-hidden="true" />
-                  <span className="visually-hidden"> (cliente destacado)</span>
-                </>
-              )}
+              {nombre + ' ' + apellido}
             </p>
-            <p className={`${styles.clientId} mb-0`}>
-              ID #{String(id).padStart(4, "0")}
-            </p>
+            {/* <p className={`${styles.clientId} mb-0`}>
+              ID #{String(id).padStart(4, "0")} se debe mostrar id?
+            </p> */}
           </div>
         </div>
       </th>
@@ -44,22 +46,30 @@ export default function Cliente({ cliente, onEditar, onEliminar }) {
 
       <td>
         <div className={`${styles.actions} d-flex justify-content-end gap-2`}>
-          <button
-            type="button"
-            className={`${styles.iconButton} ${styles.edit} btn border-0`}
-            aria-label={`Editar a ${nombre}`}
-            onClick={() => onEditar?.(cliente)}
-          >
-            <img src={IconEdit} alt="" />
-          </button>
-          <button
-            type="button"
-            className={`${styles.iconButton} ${styles.remove} btn border-0`}
-            aria-label={`Eliminar a ${nombre}`}
-            onClick={() => onEliminar?.(cliente)}
-          >
-            <img src={IconDelete} alt="" />
-          </button>
+          {activo ?
+
+            (<> 
+              <button
+                type="button"
+                className={`${styles.iconButton} ${styles.edit} btn border-0`}
+                aria-label={`Editar a ${nombre}`}
+                onClick={() => onEditar?.(cliente)}
+              >
+                <img src={IconEdit} alt="" />
+              </button>
+              <button
+                type="button"
+                className={`${styles.iconButton} ${styles.remove} btn border-0`}
+                aria-label={`Eliminar a ${nombre}`}
+                onClick={() => onEliminar?.(cliente)}
+              >
+                <img src={IconDelete} alt="" />
+              </button> 
+              </>)
+            : <button className={styles.habilitar} onClick={habilitar}>
+               Habilitar
+            </button>
+          }
         </div>
       </td>
     </tr>

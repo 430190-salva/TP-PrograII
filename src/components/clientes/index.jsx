@@ -8,7 +8,7 @@ import ActualizarClienteModal from "./ActualizarClienteModal";
 import ConfirmarBajaModal from "./ConfirmarBajaModal";
 import axios from "axios";
 import * as clientesApi from "../../services/clientesApi";
-import api from "../../services/api"
+
 
 const PAGE_SIZE = 8;
 
@@ -24,30 +24,33 @@ const soloDigitos = (texto) => texto.replace(/\D/g, "");
 export default function Clientes() {
     const [lista, setLista] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const [recienHabilitados, setRecienHabilitados] = useState([]);
     const [error, setError] = useState(null);
-    const [errorAccion, setErrorAccion] = useState(null); //para crear,editar,baja
     const [intento, setIntento] = useState(0);
     const [modal, setModal] = useState(null); // { tipo: "nuevo" | "editar" | "baja", cliente }
     const [busqueda, setBusqueda] = useState("");
     const [filtro, setFiltro] = useState("todos");
     const [pagina, setPagina] = useState(1);
+    const [aviso, setAviso] = useState(null);
+
+    const mostrarExito = (texto) => setAviso({ texto, tipo: "exito", key: Date.now() });
+    const mostrarError = (texto) => setAviso({ texto, tipo: "error", key: Date.now() });
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     const qDni = soloDigitos(q);
 
-    return lista.filter((c) => { //lista.filter da error xq esta vacio
+     return [...lista]
+    .sort((a, b) => b.id - a.id) // más nuevos primero
+    .filter((c) => {
       if (filtro === "habilitados" && !c.activo) return false;
-      if (filtro === "deshabilitados" && c.activo) return false;
+      if (filtro === "deshabilitados" && c.activo && !recienHabilitados.includes(c.id)) return false;
       if (!q) return true;
 
-      return (
-        c.nombre.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        (qDni && soloDigitos(c.dni).includes(qDni))
-      );
+      const texto = `${c.nombre} ${c.apellido} ${c.email ?? ""}`.toLowerCase();
+      return texto.includes(q) || (qDni && soloDigitos(c.dni).includes(qDni));
     });
-  }, [lista, busqueda, filtro]);
+  }, [lista, busqueda, filtro, recienHabilitados]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
   const actual = Math.min(pagina, totalPaginas);
@@ -65,47 +68,60 @@ export default function Clientes() {
   const cambiarFiltro = (valor) => {
     setFiltro(valor);
     setPagina(1);
+    setRecienHabilitados([]);
   };
 
   const cerrarModal = () => setModal(null);
 
 const crearCliente = async (datos) => {
-    setErrorAccion(null);
   try {
-    const nuevo = await api.crear(datos);
-    setLista((prev) => [...prev, nuevo]);
+    await clientesApi.crear(datos);
+    setLista(await clientesApi.listar());
     setBusqueda("");
     setFiltro("todos");
-    setPagina(Math.ceil((lista.length + 1) / PAGE_SIZE));
+    setPagina(1);
+    mostrarExito("Cliente creado correctamente.");
   } catch {
-    setErrorAccion("No se pudo crear el cliente. Intentá de nuevo.");
+    mostrarError("No se pudo crear el cliente. Intentá de nuevo.");
   }finally {
     cerrarModal();
   }
 };
 
 const actualizarCliente = async (datos) => {
-    setErrorAccion(null);
+    
+    const estabaInactivo = lista.find((c) => c.id === datos.id)?.activo === false;
   try {
-    const actualizado = await api.actualizar(modal.cliente.id, datos);
-    setLista((prev) => prev.map((c) => (c.id === actualizado.id ? actualizado : c)));
-    cerrarModal();
-  } catch {
-    setErrorAccion("No se pudo actualizar el cliente. Intentá de nuevo.");
+    await clientesApi.actualizar(datos.id, datos);
+    setLista(await clientesApi.listar());
+    if (estabaInactivo && datos.activo) {
+      setRecienHabilitados((prev) => [...prev, datos.id]);
+    }
+    mostrarExito(
+      estabaInactivo
+        ? "Cliente habilitado correctamente."
+        : "Cliente actualizado correctamente."
+    );
+} catch  {
+    mostrarError("No se pudo actualizar el cliente. Intentá de nuevo."); 
   }finally {
     cerrarModal();
   }
 };
 
-const darDeBaja = async (cliente) => {
-   try {
-    await api.darDeBaja(cliente.id);
-    setLista((prev) => prev.map((c) => (c.id === cliente.id ? { ...c, activo: false } : c)));
-    cerrarModal();
-  } catch {
-    setError("No se pudo dar de baja al cliente.");
-  }
+const darDeBaja = async (id) => {
+    
+    try {
+        await clientesApi.darDeBaja(id);
+        setLista(await clientesApi.listar());
+        mostrarExito("Cliente dado de baja correctamente.");
+    } catch {
+        mostrarError("No se pudo dar de baja al cliente.");
+    } finally {
+        cerrarModal();
+    }
 };
+
 
 useEffect(() => {
     const controller = new AbortController();//cancela la peticion cuando el componente se desmonta
@@ -114,17 +130,24 @@ useEffect(() => {
             setCargando(true);
             setError(null);
             setLista(await clientesApi.listar(controller.signal));
-            console.log(lista);
+           
             
         } catch (e) {
-            if (!axios.isCancel(e)) setError("No se pudieron cargar los clientes.");
+            if (!axios.isCancel(e)) setError("No se pudo cargar los clientes.");
         }finally{
             if (!controller.signal.aborted) setCargando(false);
         }
     }
     cargarClientes();
+    
     return () => controller.abort();
-},[intento,lista])//agrege lista
+},[intento])
+
+useEffect(() => {
+  if (!aviso) return;
+  const t = setTimeout(() => setAviso(null), aviso.tipo === "error" ? 6000 : 4000);
+  return () => clearTimeout(t);
+}, [aviso]);
     return (
         <main className={`${styles.main} flex-grow-1`}>
             <header className={`${styles.topbar} d-flex flex-wrap align-items-center justify-content-between gap-3`}>
@@ -180,20 +203,7 @@ useEffect(() => {
                             ))}
                         </fieldset>
                     </div>
-                    {errorAccion && (
-                        <div className={`${styles.alerta} d-flex align-items-center gap-3`} role="alert">
-                            <i className="bi bi-exclamation-triangle" aria-hidden="true" />
-                            <p className="mb-0 flex-grow-1">{errorAccion}</p>
-                            <button
-                                type="button"
-                                className={`${styles.alertaCerrar} btn border-0`}
-                                aria-label="Cerrar mensaje"
-                                onClick={() => setErrorAccion(null)}
-                            >
-                                <i className="bi bi-x-lg" aria-hidden="true" />
-                            </button>
-                        </div>
-                    )}
+                    
                     <div className="table-responsive">
                         <table className={`table ${styles.table} mb-0 align-middle`}>
                             <caption className="visually-hidden">Listado de clientes con su estado y acciones</caption>
@@ -235,11 +245,11 @@ useEffect(() => {
                                             cliente={c}
                                             onEditar={(cliente) => setModal({ tipo: "editar", cliente })}
                                             onEliminar={(cliente) => setModal({ tipo: "baja", cliente })}
+                                            onHabilitar={actualizarCliente}
                                         />
                                     ))
                                 )}
                             </tbody>
-
                         </table>
                     </div>
 
@@ -292,7 +302,7 @@ useEffect(() => {
             </div>
 
             {modal?.tipo === "nuevo" && (
-                <NuevoClienteModal onCerrar={cerrarModal} onCrear={crearCliente} />
+                <NuevoClienteModal clientes={lista} onCerrar={cerrarModal} onCrear={crearCliente} />
             )}
 
             {modal?.tipo === "editar" && (
@@ -305,10 +315,34 @@ useEffect(() => {
 
             {modal?.tipo === "baja" && (
                 <ConfirmarBajaModal
+                    clientes={lista}
                     cliente={modal.cliente}
                     onCerrar={cerrarModal}
                     onConfirmar={darDeBaja}
                 />
+            )}
+
+            {aviso && (
+                <div
+                    key={aviso.key}
+                    className={`${styles.toast} ${aviso.tipo === "error" ? styles.toastError : ""}`}
+                    role={aviso.tipo === "error" ? "alert" : "status"}
+                    aria-live={aviso.tipo === "error" ? "assertive" : "polite"}
+                >
+                    <i
+                        className={`bi ${aviso.tipo === "error" ? "bi-x-circle-fill" : "bi-check-circle-fill"} ${styles.toastIcon}`}
+                        aria-hidden="true"
+                    />
+                    <p className="mb-0 flex-grow-1">{aviso.texto}</p>
+                    <button
+                        type="button"
+                        className={`${styles.toastCerrar} btn border-0`}
+                        aria-label="Cerrar notificación"
+                        onClick={() => setAviso(null)}
+                    >
+                        <i className="bi bi-x-lg" aria-hidden="true" />
+                    </button>
+                </div>
             )}
         </main>
     );

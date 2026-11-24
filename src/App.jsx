@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Movies from './components/movies'
 import './App.css'
 import Navbar from './components/navbar'
@@ -11,9 +10,10 @@ import Admin from './components/Admin'
 import Clientes from './components/clientes'
 import Productos from './components/productos'
 import Login from './components/login'
+import Dashboard from './components/dashboard'
+import Comprobantes from './components/comprobantes'
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
@@ -40,10 +40,11 @@ function App() {
         }/>
         <Route path="/about" element={<About />}/>
         <Route path="/admin" element={<Admin />}>
-          {/* <Route index element={<Dashboard />} /> CREAR COMPONENTE DASHBOARD*/}
+          <Route index element={<Dashboard />} />
           <Route path="clientes" element={<Clientes />} />
           <Route path="productos" element={<Productos />} />
-         {/*  <Route path="/comprobante" element={<p>Películas</p>} /> */}
+          <Route path="comprobante" element={<Comprobantes/>} />
+          <Route path="about" element={<About/>} />
           
         </Route>  
       </Routes>

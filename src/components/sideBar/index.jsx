@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import styles from "./SideBar.module.css";
 import logo from "../../assets/cineplanet-logo.png"
 import IconSoporte from "../../assets/IconSuport.svg"
@@ -10,13 +10,6 @@ import IconComprobante from "../../assets/IconComprobante.svg"
 import IconClientes from "../../assets/IconClientes.svg"
 import IconDown from "../../assets/IconDown.svg"
 import IconSalir from "../../assets/IconSalir.svg"
-
-const tones = {
-  muted: styles.toneMuted,
-  violet: styles.toneViolet,
-  amber: styles.toneAmber,
-  green: styles.toneGreen,
-};
 
 const menu = [
   {
@@ -56,13 +49,16 @@ const linkClass =
 
 
 export default function Sidebar({
-  user = { initials: "AD", name: "Admin Principal", email: "admin@cineplanet.co" },
-  onLogout,
+  user = { initials: "AD", name: "Admin Principal", email: "admin@cineplanet.co" }
 }) {
+  const navigate = useNavigate();
   const [open, setOpen] = useState({ soporte: false, transaccion: false });
 
   const toggle = (id) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  const onLogout = () => {
+    navigate("/");
+  }
   return (
     <aside className={`${styles.sidebar} d-flex flex-column`} aria-label="Barra lateral de administración">
       <header className={`${styles.header} d-flex align-items-center gap-3`}>
@@ -116,6 +112,12 @@ export default function Sidebar({
               </li>
             )
           )}
+          <li >
+                <NavLink to="about"  className={linkClass()}>
+                 
+                  <span>Acerca de</span>
+                </NavLink>
+          </li>
         </ul>
       </nav>
 

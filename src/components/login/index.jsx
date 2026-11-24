@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router";
+import { login } from "../../services/dashboardApi" 
 import styles from "./Login.module.css";
 import logo from "../../assets/cineplanet-logo.png"
 
@@ -27,19 +29,91 @@ const IconPlanet = () => (
   </svg>
 );
 
+const USER_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+$/;
+
+const validateUser = (value) => {
+  if (!value.trim()) return "Ingresa tu nombre de usuario.";
+  if (value.length > 64) return `El usuario no puede tener más de 64 caracteres.`;
+  if (!USER_REGEX.test(value)) return "Usa solo letras, sin números, espacios ni símbolos.";
+  return "";
+};
+
+const validatePassword = (value) => {
+  if (!value) return "Ingresa tu contraseña.";
+  if (/\s/.test(value)) return "La contraseña no puede contener espacios.";
+  if (value.length < 7) return `La contraseña debe tener al menos 7 caracteres.`;
+  if (value.length > 64) return `La contraseña no puede tener más de 64 caracteres.`;
+  return "";
+};
+
+const getServerError = (err) => {
+  const status = err?.response?.status;
+  if (status === 400 || status === 401 || status === 403) return "Usuario o contraseña incorrectos.";
+  if (status >= 500) return "El servidor tuvo un problema. Inténtalo de nuevo en unos minutos.";
+  if (err?.code === "ECONNABORTED") return "El servidor tardó demasiado en responder. Inténtalo de nuevo.";
+  if (!err?.response) return "No se pudo conectar con el servidor. Revisa tu conexión.";
+  return "No se pudo iniciar sesión. Inténtalo de nuevo.";
+};
+
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ user: "", password: "", remember: false });
+  const [touched, setTouched] = useState({ user: false, password: false });
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+const errors = useMemo(
+    () => ({ user: validateUser(form.user), password: validatePassword(form.password) }),
+    [form.user, form.password]
+  );
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    if (serverError) setServerError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched((t) => ({ ...t, [name]: true }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // conectar con  API de autenticación
-    console.log("Login:", form);
+    if (loading) return;
+
+    setTouched({ user: true, password: true });
+    setServerError("");
+    if (errors.user || errors.password) return;
+
+    setLoading(true);
+    try {
+      // Evita que un token vencido se envíe en la petición de login
+      localStorage.removeItem("token");
+
+      const data = await login({ user: form.user, password: form.password });
+      if (!data?.token) throw new Error("Respuesta sin token");
+
+      // El interceptor de dashboardApi lee "token" de localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem(
+        "session",
+        JSON.stringify({
+          idUsuario: data.idUsuario,
+          nombreUsuario: data.nombreUsuario,
+          email: data.email,
+          rol: data.rol,
+          expira: data.expira,
+        })
+      );
+
+      navigate("/admin", { replace: true });
+    } catch (err) {
+      setServerError(getServerError(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,7 +128,7 @@ export default function Login() {
               
               <img src={logo} alt="cineplanet logo"  width="300" className="mb-4"/>
               <p className={`${styles.lead} mb-4`}>
-                Plataforma integral de gestión cinematográfica para explorar la cartelera de estrenos, reservar entradas en salas digitales e IMAX, administrar socios y controlar el catálogo de Candy Bar y comprobantes desde un solo lugar.
+                Aplicación web para la administración centralizada de clientes, productos de confitería y comprobantes de venta, integrada con análisis de métricas de rendimiento.
               </p>
 
               
@@ -83,29 +157,38 @@ export default function Login() {
 
               <form onSubmit={handleSubmit} noValidate>
                 <div className="mb-3">
-                  <label htmlFor="user" className={`${styles.label} d-block`}>Correo electrónico o N° de socio</label>
+                  <label htmlFor="user" className={`${styles.label} d-block`}>nombre de usuario</label>
                   <div className={styles.inputGroup}>
                     <span className={styles.icon}><IconMail /></span>
                     <input
-                      id="user" name="user" type="text" className={`form-control ${styles.input}`}
-                      placeholder="tu@correo.com" autoComplete="username"
-                      value={form.user} onChange={handleChange} required
+                      id="user" name="user" type="text"
+                      className={`form-control ${styles.input} ${touched.user && errors.user ? styles.inputInvalid : ""}`}
+                      placeholder="Tu usuario" autoComplete="username" maxLength={30}
+                      value={form.user} onChange={handleChange} onBlur={handleBlur} required
+                      aria-invalid={touched.user && !!errors.user}
+                      aria-describedby={touched.user && errors.user ? "user-error" : undefined}
                     />
                   </div>
+                  {touched.user && errors.user && (
+                    <p id="user-error" className={styles.fieldError} role="alert">{errors.user}</p>
+                  )}
                 </div>
 
                 <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-baseline">
+                  {/* <div className="d-flex justify-content-between align-items-baseline">
                     <label htmlFor="password" className={styles.label}>Contraseña</label>
                     <a href="/recuperar" className={`${styles.link} small`}>¿Olvidaste tu contraseña?</a>
-                  </div>
+                  </div> */}
                   <div className={styles.inputGroup}>
                     <span className={styles.icon}><IconLock /></span>
                     <input
                       id="password" name="password" type={showPassword ? "text" : "password"}
-                      className={`form-control ${styles.input}`} placeholder="••••••••"
-                      autoComplete="current-password"
-                      value={form.password} onChange={handleChange} required
+                      className={`form-control ${styles.input} ${touched.password && errors.password ? styles.inputInvalid : ""}`}
+                      placeholder="••••••••" aria-label="Contraseña"
+                      autoComplete="current-password" maxLength={64}
+                      value={form.password} onChange={handleChange} onBlur={handleBlur} required
+                      aria-invalid={touched.password && !!errors.password}
+                      aria-describedby={touched.password && errors.password ? "password-error" : undefined}
                     />
                     <button
                       type="button" className={styles.toggle}
@@ -116,22 +199,21 @@ export default function Login() {
                       {showPassword ? <IconEyeOff /> : <IconEye />}
                     </button>
                   </div>
+                  {touched.password && errors.password && (
+                    <p id="password-error" className={styles.fieldError} role="alert">{errors.password}</p>
+                  )}
                 </div>
 
-                <div className="form-check d-flex align-items-center gap-2 ps-0 mb-4">
-                  <input
-                    id="remember" name="remember" type="checkbox"
-                    className={`form-check-input ${styles.check} m-0`}
-                    checked={form.remember} onChange={handleChange}
-                  />
-                  <label htmlFor="remember" className="form-check-label small" style={{ color: "#c4c4d6" }}>
-                    Mantener mi sesión iniciada en este dispositivo
-                  </label>
-                </div>
+                {serverError && (
+                  <div className={`${styles.alertError} mb-3`} role="alert">{serverError}</div>
+                )}
 
-                <button type="submit" className={`btn ${styles.submit} w-100`}>Ingresar a mi cuenta</button>
+
+                <button type="submit" className={`btn ${styles.submit} w-100`} disabled={loading}>
+                  {loading ? "Ingresando..." : "Ingresar a mi cuenta"}
+                </button>
               </form>
-
+{/* 
               <div className={`${styles.divider} my-4`} role="separator">
                 <span>o continúa con</span>
               </div>
@@ -140,7 +222,7 @@ export default function Login() {
                 <button type="button" className={`btn ${styles.google}`}>
                   <IconUserCircle /> Google
                 </button>
-              </div>
+              </div> */}
 
               <p className={`text-center ${styles.muted} mt-4 mb-0`}>
                 ¿Aún no eres Socio?{" "}

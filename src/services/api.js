@@ -7,6 +7,13 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// Si hay token (devuelto por POST /api/auth/login), se envía en todas las peticiones
+/* api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+}); */
+
 // Si  pide token, se agrega acá y vale para todas las peticiones
 // api.interceptors.request.use((config) => {
 //   const token = localStorage.getItem("token");

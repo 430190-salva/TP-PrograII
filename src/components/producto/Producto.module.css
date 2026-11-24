@@ -88,6 +88,24 @@
   background: rgba(248, 113, 113, 0.1);
   border-color: rgba(248, 113, 113, 0.3);
 }
+.habilitar {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  color: var(--c-green);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+
+  &:hover{
+    background: rgba(52, 211, 153, 0.233);
+    color: var(--c-green);
+  }
+}
+.habilitar:focus-visible {
+  outline: 2px solid var(--c-green);
+  outline-offset: 2px;
+}
 
 /* Fila inactiva */
 .rowInactive th,
@@ -101,9 +119,8 @@
   color: var(--c-muted);
 }
 
-.rowInactive .avatar,
-.rowInactive .actions {
-  opacity: 0.55;
+.rowInactive {
+  opacity: 0.7;
 }
 
 /* Acciones */

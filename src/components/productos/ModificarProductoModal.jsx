@@ -1,22 +1,22 @@
 import ProductoFormModal from "./ProductoFormModal";
 
-export default function ModificarProductoModal({ producto, onCerrar, onActualizar }) {
+export default function ModificarProductoModal({ producto, tipos, tamanos, onCerrar, onActualizar }) {
   return (
     <ProductoFormModal
       titulo="Modificar Producto"
-      descripcion="Edite precio, inventario o categoría"
-      icono="bi-pencil"
-      tono="violet"
+      descripcion="Edite precio, tipo o tamaño"
       textoGuardar="Guardar Cambios"
+      tipos={tipos}
+      tamanos={tamanos}
       inicial={{
-        nombre: producto.nombre,
-        tamano: producto.tamano,
-        categoria: producto.categoria,
+        descripcion: producto.descripcion,
+        idTipo: String(producto.idTipo),
+        idTamano: String(producto.idTamano),
         precio: String(producto.precio),
         activo: producto.activo,
       }}
       onCerrar={onCerrar}
-      onGuardar={onActualizar}
+      onGuardar={(datos) => onActualizar({ ...datos, id: producto.id })}
     />
   );
 }
